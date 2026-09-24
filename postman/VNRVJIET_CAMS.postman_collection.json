@@ -1,0 +1,378 @@
+{
+  "info": {
+    "name": "VNRVJIET CAMS API",
+    "description": "Campus Announcement & Management System backend. Covers auth, notices, acknowledgments, and user administration with both success and failure scenarios.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:4000" },
+    { "key": "studentToken", "value": "" },
+    { "key": "facultyToken", "value": "" },
+    { "key": "adminToken", "value": "" },
+    { "key": "createdNoticeId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register - success",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status is 201', () => pm.response.to.have.status(201));",
+            "pm.test('Returns token', () => pm.expect(pm.response.json()).to.have.property('token'));"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Test User\",\n  \"email\": \"test.user.{{$randomInt}}@vnrvjiet.in\",\n  \"password\": \"Test@1234\",\n  \"role\": \"student\",\n  \"department\": \"IT\",\n  \"year\": 2\n}" },
+            "url": { "raw": "{{baseUrl}}/api/auth/register", "host": ["{{baseUrl}}"], "path": ["api","auth","register"] }
+          }
+        },
+        {
+          "name": "Register - failure (duplicate email)",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status is 409', () => pm.response.to.have.status(409));"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Duplicate\",\n  \"email\": \"admin@vnrvjiet.in\",\n  \"password\": \"Whatever@1\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/auth/register", "host": ["{{baseUrl}}"], "path": ["api","auth","register"] }
+          }
+        },
+        {
+          "name": "Register - failure (weak password)",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status is 400', () => pm.response.to.have.status(400));"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Weak Pass\",\n  \"email\": \"weakpass@vnrvjiet.in\",\n  \"password\": \"123\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/auth/register", "host": ["{{baseUrl}}"], "path": ["api","auth","register"] }
+          }
+        },
+        {
+          "name": "Login (student) - success",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+            "const json = pm.response.json();",
+            "pm.test('Returns token', () => pm.expect(json).to.have.property('token'));",
+            "pm.collectionVariables.set('studentToken', json.token);"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"mehek.student@vnrvjiet.in\",\n  \"password\": \"Student@123\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api","auth","login"] }
+          }
+        },
+        {
+          "name": "Login (faculty) - success",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+            "const json = pm.response.json();",
+            "pm.collectionVariables.set('facultyToken', json.token);"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"faculty.rao@vnrvjiet.in\",\n  \"password\": \"Faculty@123\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api","auth","login"] }
+          }
+        },
+        {
+          "name": "Login (admin) - success",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+            "const json = pm.response.json();",
+            "pm.collectionVariables.set('adminToken', json.token);"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"admin@vnrvjiet.in\",\n  \"password\": \"Admin@123\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api","auth","login"] }
+          }
+        },
+        {
+          "name": "Login - failure (wrong password)",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status is 401', () => pm.response.to.have.status(401));"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"mehek.student@vnrvjiet.in\",\n  \"password\": \"wrongpassword\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api","auth","login"] }
+          }
+        },
+        {
+          "name": "Login - failure (unknown email)",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status is 401', () => pm.response.to.have.status(401));"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"nobody@vnrvjiet.in\",\n  \"password\": \"whatever\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api","auth","login"] }
+          }
+        },
+        {
+          "name": "Get current user (/me) - success",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status is 200', () => pm.response.to.have.status(200));"
+          ]}}],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{studentToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/auth/me", "host": ["{{baseUrl}}"], "path": ["api","auth","me"] }
+          }
+        },
+        {
+          "name": "Get current user (/me) - failure (no token)",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status is 401', () => pm.response.to.have.status(401));"
+          ]}}],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/auth/me", "host": ["{{baseUrl}}"], "path": ["api","auth","me"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Notices",
+      "item": [
+        {
+          "name": "List notices - success",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+            "pm.test('Has data array', () => pm.expect(pm.response.json()).to.have.property('data'));"
+          ]}}],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{studentToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/notices?category=exam&page=1&limit=10", "host": ["{{baseUrl}}"], "path": ["api","notices"], "query": [
+              { "key": "category", "value": "exam" },
+              { "key": "page", "value": "1" },
+              { "key": "limit", "value": "10" }
+            ]}
+          }
+        },
+        {
+          "name": "List notices - failure (no token)",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status is 401', () => pm.response.to.have.status(401));"
+          ]}}],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/notices", "host": ["{{baseUrl}}"], "path": ["api","notices"] }
+          }
+        },
+        {
+          "name": "List notices - failure (invalid category)",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status is 400', () => pm.response.to.have.status(400));"
+          ]}}],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{studentToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/notices?category=not-a-real-category", "host": ["{{baseUrl}}"], "path": ["api","notices"], "query": [
+              { "key": "category", "value": "not-a-real-category" }
+            ]}
+          }
+        },
+        {
+          "name": "Create notice (faculty) - success",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status is 201', () => pm.response.to.have.status(201));",
+            "const json = pm.response.json();",
+            "pm.collectionVariables.set('createdNoticeId', json.data.id);"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{facultyToken}}" }],
+            "body": { "mode": "raw", "raw": "{\n  \"title\": \"Guest Lecture on Robotics\",\n  \"content\": \"A guest lecture on autonomous systems will be held Friday 3 PM in Seminar Hall 2.\",\n  \"category\": \"event\",\n  \"priority\": \"normal\",\n  \"target_department\": \"IT\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/notices", "host": ["{{baseUrl}}"], "path": ["api","notices"] }
+          }
+        },
+        {
+          "name": "Create notice - failure (student forbidden)",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status is 403', () => pm.response.to.have.status(403));"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{studentToken}}" }],
+            "body": { "mode": "raw", "raw": "{\n  \"title\": \"Should fail\",\n  \"content\": \"Students cannot post notices.\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/notices", "host": ["{{baseUrl}}"], "path": ["api","notices"] }
+          }
+        },
+        {
+          "name": "Create notice - failure (missing title)",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status is 400', () => pm.response.to.have.status(400));"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{facultyToken}}" }],
+            "body": { "mode": "raw", "raw": "{\n  \"content\": \"No title provided.\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/notices", "host": ["{{baseUrl}}"], "path": ["api","notices"] }
+          }
+        },
+        {
+          "name": "Get notice by id - success",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status is 200', () => pm.response.to.have.status(200));"
+          ]}}],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{studentToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/notices/{{createdNoticeId}}", "host": ["{{baseUrl}}"], "path": ["api","notices","{{createdNoticeId}}"] }
+          }
+        },
+        {
+          "name": "Get notice by id - failure (not found)",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status is 404', () => pm.response.to.have.status(404));"
+          ]}}],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{studentToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/notices/999999", "host": ["{{baseUrl}}"], "path": ["api","notices","999999"] }
+          }
+        },
+        {
+          "name": "Update notice (faculty, own) - success",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status is 200', () => pm.response.to.have.status(200));"
+          ]}}],
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{facultyToken}}" }],
+            "body": { "mode": "raw", "raw": "{\n  \"priority\": \"high\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/notices/{{createdNoticeId}}", "host": ["{{baseUrl}}"], "path": ["api","notices","{{createdNoticeId}}"] }
+          }
+        },
+        {
+          "name": "Update notice - failure (student forbidden)",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status is 403', () => pm.response.to.have.status(403));"
+          ]}}],
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{studentToken}}" }],
+            "body": { "mode": "raw", "raw": "{\n  \"priority\": \"low\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/notices/{{createdNoticeId}}", "host": ["{{baseUrl}}"], "path": ["api","notices","{{createdNoticeId}}"] }
+          }
+        },
+        {
+          "name": "Acknowledge notice - success",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status is 201', () => pm.response.to.have.status(201));"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{studentToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/notices/{{createdNoticeId}}/ack", "host": ["{{baseUrl}}"], "path": ["api","notices","{{createdNoticeId}}","ack"] }
+          }
+        },
+        {
+          "name": "Acknowledge notice - failure (not found)",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status is 404', () => pm.response.to.have.status(404));"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{studentToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/notices/999999/ack", "host": ["{{baseUrl}}"], "path": ["api","notices","999999","ack"] }
+          }
+        },
+        {
+          "name": "View acknowledgments (faculty) - success",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status is 200', () => pm.response.to.have.status(200));"
+          ]}}],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{facultyToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/notices/{{createdNoticeId}}/ack", "host": ["{{baseUrl}}"], "path": ["api","notices","{{createdNoticeId}}","ack"] }
+          }
+        },
+        {
+          "name": "View acknowledgments - failure (student forbidden)",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status is 403', () => pm.response.to.have.status(403));"
+          ]}}],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{studentToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/notices/{{createdNoticeId}}/ack", "host": ["{{baseUrl}}"], "path": ["api","notices","{{createdNoticeId}}","ack"] }
+          }
+        },
+        {
+          "name": "Delete notice (faculty, own) - success",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status is 204', () => pm.response.to.have.status(204));"
+          ]}}],
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{facultyToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/notices/{{createdNoticeId}}", "host": ["{{baseUrl}}"], "path": ["api","notices","{{createdNoticeId}}"] }
+          }
+        },
+        {
+          "name": "Delete notice - failure (already deleted / not found)",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status is 404', () => pm.response.to.have.status(404));"
+          ]}}],
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{facultyToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/notices/{{createdNoticeId}}", "host": ["{{baseUrl}}"], "path": ["api","notices","{{createdNoticeId}}"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Users (admin)",
+      "item": [
+        {
+          "name": "List users (admin) - success",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status is 200', () => pm.response.to.have.status(200));"
+          ]}}],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/users", "host": ["{{baseUrl}}"], "path": ["api","users"] }
+          }
+        },
+        {
+          "name": "List users - failure (student forbidden)",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status is 403', () => pm.response.to.have.status(403));"
+          ]}}],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{studentToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/users", "host": ["{{baseUrl}}"], "path": ["api","users"] }
+          }
+        },
+        {
+          "name": "Get user by id - failure (not found)",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status is 404', () => pm.response.to.have.status(404));"
+          ]}}],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/users/999999", "host": ["{{baseUrl}}"], "path": ["api","users","999999"] }
+          }
+        }
+      ]
+    }
+  ]
+}
